@@ -3,15 +3,14 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/neptune-media/robin/pkg/pipeline"
 	"github.com/neptune-media/robin/pkg/tasks"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v2"
-	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -83,38 +82,24 @@ media library a bit easier.`,
 			return
 		}
 
-		// Split the input file into multiple files
-		files, err := splitVideo.Do(context.TODO(), args[0])
-		if err != nil {
-			logger.Errorw("error while splitting video", "err", err)
-			return
+		pipe := &pipeline.Pipeline{
+			Logger: logger,
+			Plex: pipeline.PlexOptions{
+				Enabled:   viper.GetBool(ARG_PLEX),
+				Episode:   viper.GetInt(ARG_PLEX_EPISODE),
+				MediaType: viper.GetString(ARG_PLEX_MEDIA_TYPE),
+				Name:      viper.GetString(ARG_PLEX_NAME),
+				Season:    viper.GetInt(ARG_PLEX_SEASON),
+				Year:      viper.GetInt(ARG_PLEX_YEAR),
+			},
+			OutputDir: outputDir,
+			Split:     splitVideo,
+			Transcode: transcodeVideo,
 		}
 
-		for i, file := range files {
-			// Transcode each file from the split
-			transcoded, err := transcodeVideo.Do(context.TODO(), file)
-			if err != nil {
-				logger.Errorw("error while transcoding video", "err", err)
-			}
-
-			// Determine the file output name
-			var output string
-			episode := viper.GetInt(ARG_PLEX_EPISODE) + i
-			if viper.GetBool(ARG_PLEX) {
-				// We have a little bit of extra work to do if we want plex naming
-				output = filepath.Join(outputDir, formatPlexName(episode))
-				if err := os.MkdirAll(filepath.Dir(output), 0750); err != nil {
-					logger.Errorw("error while creating plex output dir", "err", err)
-					return
-				}
-			} else {
-				// Just copy the result to the output dir with the same name
-				output = filepath.Join(outputDir, filepath.Base(transcoded))
-			}
-
-			// Copy the output file
-			if err := copyFile(transcoded, output); err != nil {
-				logger.Errorw("error while copying video to output dir", "err", err)
+		for _, input := range args {
+			if _, err := pipe.Do(context.TODO(), input); err != nil {
+				logger.Errorw("error while running pipeline", "err", err)
 				return
 			}
 		}
@@ -165,29 +150,6 @@ func bindFlags(cmd *cobra.Command) error {
 	return nil
 }
 
-func copyFile(sourceName, destName string) error {
-	// Open source for reading
-	in, err := os.Open(sourceName)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	// Open destination for writing
-	out, err := os.Create(destName)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Allocate a 4k buffer
-	buf := make([]byte, 4096)
-
-	// Go!
-	_, err = io.CopyBuffer(out, in, buf)
-	return err
-}
-
 func createOutputDirectory() (string, error) {
 	// Get the name of the output directory
 	name := viper.GetString(ARG_OUTPUT)
@@ -213,26 +175,6 @@ func createTaskDirectory() (string, func(logger *zap.SugaredLogger), error) {
 	}
 
 	return dir, f, nil
-}
-
-func formatPlexName(episode int) string {
-	name := viper.GetString(ARG_PLEX_NAME)
-	year := viper.GetInt(ARG_PLEX_YEAR)
-	plexName := name
-	if year > 0 {
-		plexName = fmt.Sprintf("%s (%d)", name, year)
-	}
-
-	// TODO: Add validation somewhere to enforce checking for these
-	switch viper.GetString(ARG_PLEX_MEDIA_TYPE) {
-	case "movie":
-		return fmt.Sprintf("%s/%s.mkv", plexName, plexName)
-	case "tv":
-		season := viper.GetInt(ARG_PLEX_SEASON)
-		return fmt.Sprintf("%s/Season %02d/%s - s%02de%02d.mkv", plexName, season, plexName, season, episode)
-	}
-
-	return "unknown.mkv"
 }
 
 func loadTemplates(task *tasks.TranscodeVideo) error {
