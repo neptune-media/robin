@@ -39,6 +39,7 @@ jobs:
   publish-release:
     name: Publish release
     runs-on: ubuntu-latest
+    needs: build-artifacts
     steps:
       - uses: actions/download-artifact@v3
       - uses: "marvinpinto/action-automatic-releases@latest"
