@@ -2,7 +2,15 @@ module github.com/neptune-media/robin
 
 go 1.18
 
-require github.com/neptune-media/MediaKit-go v0.0.0-20210523154413-3635e6d7a42b
+require (
+	github.com/neptune-media/MediaKit-go v0.1.0
+	github.com/spf13/cobra v1.6.1
+	github.com/spf13/pflag v1.0.5
+	github.com/spf13/viper v1.13.0
+	go.uber.org/zap v1.23.0
+	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
@@ -15,17 +23,11 @@ require (
 	github.com/pixelbender/go-matroska v0.0.0-20181029113629-4ea028a99fa6 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
-	github.com/spf13/cobra v1.6.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.13.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.23.0 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
