@@ -1,0 +1,49 @@
+---
+name: Create Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-artifacts:
+    name: "Build for ${{ matrix.goos }}-${{ matrix.goarch }}"
+    runs-on: ${{ matrix.runs-os }}
+    strategy:
+      matrix:
+        include:
+          - {goos: "linux", goarch: "amd64", runs-on: "ubuntu-latest"}
+          - {goos: "windows", goarch: "amd64", runs-on: "ubuntu-latest"}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          BINNAME="robin-${{ matrix.goos }}-${{ matrix.goarch }}"
+          if [ "${GOOS}" == "windows" ]; then
+            BINNAME="${BINNAME}.exe"
+          fi
+          go build -ldflags="-s -w" -o "${BINNAME}"
+      - uses: actions/upload-artifact@v3
+        with:
+          name: robin-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: robin-*
+
+  publish-release:
+    name: Publish release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: |
+            robin-*/robin-*
