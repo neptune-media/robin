@@ -60,11 +60,12 @@ func (p *ProgressListener) Run(logger *zap.SugaredLogger) {
 		}
 
 		kv := strings.Split(line, "=")
+		value := strings.TrimSpace(kv[1])
 		switch kv[0] {
 		case "out_time":
-			logger.Infow("ffmpeg progress", "out-time", kv[1])
+			logger.Infow("ffmpeg progress", "out-time", value)
 		case "progress":
-			if strings.Trim(kv[1], "\n") == "end" {
+			if value == "end" {
 				return
 			}
 		default:
