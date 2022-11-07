@@ -25,6 +25,7 @@ const (
 	ARG_PLEX_NAME       = "plex-name"
 	ARG_PLEX_SEASON     = "plex-season"
 	ARG_PLEX_YEAR       = "plex-year"
+	ARG_SPLIT           = "split"
 	ARG_TEMPLATE        = "template"
 	ARG_WORKDIR         = "work-dir"
 )
@@ -66,22 +67,6 @@ media library a bit easier.`,
 			return
 		}
 
-		// Setup the split video task
-		splitVideo := &tasks.SplitVideo{
-			Logger:  logger,
-			WorkDir: tempDir,
-		}
-
-		// Setup the transcoding task
-		transcodeVideo := &tasks.TranscodeVideo{
-			Logger:  logger,
-			WorkDir: tempDir,
-		}
-		if err := loadTemplates(transcodeVideo); err != nil {
-			logger.Errorw("error while loading templates", "err", err)
-			return
-		}
-
 		pipe := &pipeline.Pipeline{
 			Logger: logger,
 			Plex: pipeline.PlexOptions{
@@ -93,8 +78,24 @@ media library a bit easier.`,
 				Year:      viper.GetInt(ARG_PLEX_YEAR),
 			},
 			OutputDir: outputDir,
-			Split:     splitVideo,
-			Transcode: transcodeVideo,
+		}
+
+		if viper.GetBool(ARG_SPLIT) {
+			// Setup the split video task
+			pipe.Split = &tasks.SplitVideo{
+				Logger:  logger,
+				WorkDir: tempDir,
+			}
+		}
+
+		// Setup the transcoding task
+		pipe.Transcode = &tasks.TranscodeVideo{
+			Logger:  logger,
+			WorkDir: tempDir,
+		}
+		if err := loadTemplates(pipe.Transcode); err != nil {
+			logger.Errorw("error while loading templates", "err", err)
+			return
 		}
 
 		for _, input := range args {
@@ -126,6 +127,7 @@ func init() {
 	rootCmd.Flags().String(ARG_PLEX_NAME, "", "Movie or TV Show name")
 	rootCmd.Flags().Int(ARG_PLEX_SEASON, 1, "Season number for plex tv shows")
 	rootCmd.Flags().Int(ARG_PLEX_YEAR, 0, "Year of the plex media item")
+	rootCmd.Flags().Bool(ARG_SPLIT, false, "Enables multi-episode file splitting before transcoding")
 	rootCmd.Flags().StringArray(ARG_TEMPLATE, nil, "Specifies a path to a template file")
 	rootCmd.Flags().String(ARG_WORKDIR, "", "Specifies a directory to use for scratch space")
 }

@@ -40,24 +40,22 @@ func (p *Pipeline) Do(ctx context.Context, input string) ([]string, error) {
 	}
 
 	outputs := make([]string, 0)
-	if p.Transcode != nil {
-		for _, file := range files {
-			// Transcode each file from the split
-			transcoded, err := p.Transcode.Do(context.TODO(), file)
-			if err != nil {
-				p.Logger.Errorw("error while transcoding video", "err", err)
-				return nil, err
-			}
-
-			// Copy the output file
-			output := p.getOutputPath(transcoded)
-			if err := copyFile(transcoded, output); err != nil {
-				p.Logger.Errorw("error while copying video to output dir", "err", err)
-				return nil, err
-			}
-			outputs = append(outputs, output)
-			p.Plex.Episode += 1
+	for _, file := range files {
+		// Transcode each file from the split
+		transcoded, err := p.Transcode.Do(context.TODO(), file)
+		if err != nil {
+			p.Logger.Errorw("error while transcoding video", "err", err)
+			return nil, err
 		}
+
+		// Copy the output file
+		output := p.getOutputPath(transcoded)
+		if err := copyFile(transcoded, output); err != nil {
+			p.Logger.Errorw("error while copying video to output dir", "err", err)
+			return nil, err
+		}
+		outputs = append(outputs, output)
+		p.Plex.Episode += 1
 	}
 
 	return outputs, nil
