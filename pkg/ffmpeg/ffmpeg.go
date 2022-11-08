@@ -2,11 +2,10 @@ package ffmpeg
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"io"
 	"os/exec"
 	"strings"
-	"sync"
 )
 
 const (
@@ -60,6 +59,9 @@ type Runner struct {
 	// Subtitle output encoding options
 	SubtitleOptions EncodingOptions
 
+	// Uses a lower process priority for ffmpeg
+	UseLowerPriority bool
+
 	// Video output encoding options
 	VideoOptions EncodingOptions
 
@@ -67,12 +69,35 @@ type Runner struct {
 }
 
 func (r *Runner) Do() error {
-	args := r.buildArgs()
-	c := exec.Command(cmdName, args...)
-	o, err := c.CombinedOutput()
+	return r.DoWithContext(context.Background())
+}
 
-	r.output = make([]byte, len(o))
-	copy(r.output, o)
+func (r *Runner) DoWithContext(ctx context.Context) error {
+	args := r.buildArgs()
+	c := exec.CommandContext(ctx, cmdName, args...)
+
+	// Same as c.CombinedOutput()
+	var buf bytes.Buffer
+	c.Stdout = &buf
+	c.Stderr = &buf
+
+	// Start the process
+	if err := c.Start(); err != nil {
+		return err
+	}
+
+	if r.UseLowerPriority {
+		if err := setLowerPriority(c.Process); err != nil {
+			return err
+		}
+	}
+
+	// Wait for the process to exit
+	err := c.Wait()
+
+	// Copy the buffer to storage
+	r.output = make([]byte, buf.Len())
+	copy(r.output, buf.Bytes())
 	return err
 }
 
@@ -141,40 +166,4 @@ func (r *Runner) buildArgs() []string {
 	)
 
 	return filter(args, func(s string) bool { return len(s) > 0 })
-}
-
-func (r *Runner) execAndWait(args ...string) ([]byte, error) {
-	c := exec.Command(cmdName, args...)
-
-	stdout, err := c.StdoutPipe()
-	if err != nil {
-		return nil, err
-	}
-
-	if err := c.Start(); err != nil {
-		return nil, err
-	}
-
-	var buf bytes.Buffer
-	bufLock := &sync.Mutex{}
-	go func() {
-		bufLock.Lock()
-		defer bufLock.Unlock()
-		for {
-			if _, err := io.Copy(&buf, stdout); err != nil {
-				return
-			}
-		}
-	}()
-
-	if err := c.Wait(); err != nil {
-		return nil, err
-	}
-	bufLock.Lock()
-	defer bufLock.Unlock()
-
-	arr := make([]byte, buf.Len())
-	copy(arr, buf.Bytes())
-
-	return arr, nil
 }

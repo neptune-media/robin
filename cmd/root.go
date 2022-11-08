@@ -18,6 +18,7 @@ import (
 )
 
 const (
+	ARG_LOW_PRIORITY    = "low-priority"
 	ARG_OUTPUT          = "output"
 	ARG_PLEX            = "plex"
 	ARG_PLEX_EPISODE    = "plex-episode"
@@ -90,8 +91,9 @@ media library a bit easier.`,
 
 		// Setup the transcoding task
 		pipe.Transcode = &tasks.TranscodeVideo{
-			Logger:  logger,
-			WorkDir: tempDir,
+			Logger:           logger,
+			UseLowerPriority: viper.GetBool(ARG_LOW_PRIORITY),
+			WorkDir:          tempDir,
 		}
 		if err := loadTemplates(pipe.Transcode); err != nil {
 			logger.Errorw("error while loading templates", "err", err)
@@ -120,6 +122,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
+	rootCmd.Flags().Bool(ARG_LOW_PRIORITY, false, "Runs subprocesses (ffmpeg/mkvmerge/etc) at a lower process priority")
 	rootCmd.Flags().String(ARG_OUTPUT, "robin-output", "Specifies a folder to copy final output to")
 	rootCmd.Flags().Bool(ARG_PLEX, false, "Enables renaming of output to plex recommendations")
 	rootCmd.Flags().Int(ARG_PLEX_EPISODE, 1, "Starting episode number for plex tv shows")

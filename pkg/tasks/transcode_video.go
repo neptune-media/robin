@@ -11,9 +11,10 @@ import (
 )
 
 type TranscodeVideo struct {
-	Logger  *zap.SugaredLogger
-	Options TranscodeVideoOptions
-	WorkDir string
+	Logger           *zap.SugaredLogger
+	Options          TranscodeVideoOptions
+	UseLowerPriority bool
+	WorkDir          string
 }
 
 type TranscodeVideoOptions struct {
@@ -63,6 +64,7 @@ func (t *TranscodeVideo) Do(ctx context.Context, inputFilename string) (string, 
 		OutputFilename:    outputFilename,
 		SubtitleLanguages: opts.SubtitleLanguages,
 		SubtitleOptions:   subtitleOpts,
+		UseLowerPriority:  t.UseLowerPriority,
 		VideoOptions:      videoOpts,
 	}
 
