@@ -63,6 +63,7 @@ func (t *TranscodeVideo) Do(ctx context.Context, inputFilename string) (string, 
 		OutputFilename:    outputFilename,
 		SubtitleLanguages: opts.SubtitleLanguages,
 		SubtitleOptions:   subtitleOpts,
+		UseLowerPriority:  true,
 		VideoOptions:      videoOpts,
 	}
 
