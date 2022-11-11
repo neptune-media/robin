@@ -7,11 +7,21 @@ import (
 	"go.uber.org/zap"
 	"io"
 	"net"
+	"strconv"
 	"strings"
 )
 
 type ProgressListener struct {
 	listener *net.TCPListener
+}
+
+type ProgressReport struct {
+	Bitrate   string
+	FPS       float64
+	Frame     int
+	OutTime   string
+	Speed     string
+	TotalSize int
 }
 
 func (p *ProgressListener) Begin() (string, error) {
@@ -49,6 +59,7 @@ func (p *ProgressListener) Run(logger *zap.SugaredLogger) {
 	defer conn.Close()
 
 	reader := bufio.NewReader(conn)
+	report := &ProgressReport{}
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
@@ -62,9 +73,27 @@ func (p *ProgressListener) Run(logger *zap.SugaredLogger) {
 		kv := strings.Split(line, "=")
 		value := strings.TrimSpace(kv[1])
 		switch kv[0] {
+		case "bitrate":
+			report.Bitrate = value
+		case "frame":
+			report.Frame, _ = strconv.Atoi(value)
+		case "fps":
+			report.FPS, _ = strconv.ParseFloat(value, 32)
 		case "out_time":
-			logger.Infow("ffmpeg progress", "out-time", value)
+			report.OutTime = value
+		case "speed":
+			report.Speed = value
+		case "total_size":
+			report.TotalSize, _ = strconv.Atoi(value)
 		case "progress":
+			logger.Infow("ffmpeg progress",
+				"bitrate", report.Bitrate,
+				"frame", report.Frame,
+				"fps", fmt.Sprintf("%.02f", report.FPS),
+				"out_time", report.OutTime,
+				"speed", report.Speed,
+				"total_size", report.TotalSize,
+			)
 			if value == "end" {
 				return
 			}
