@@ -84,8 +84,9 @@ media library a bit easier.`,
 		if viper.GetBool(ARG_SPLIT) {
 			// Setup the split video task
 			pipe.Split = &tasks.SplitVideo{
-				Logger:  logger,
-				WorkDir: tempDir,
+				Logger:           logger,
+				UseLowerPriority: viper.GetBool(ARG_LOW_PRIORITY),
+				WorkDir:          tempDir,
 			}
 		}
 
@@ -122,7 +123,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
-	rootCmd.Flags().Bool(ARG_LOW_PRIORITY, false, "Runs subprocesses (ffmpeg/mkvmerge/etc) at a lower process priority")
+	rootCmd.Flags().Bool(ARG_LOW_PRIORITY, false, "Runs subprocesses (codec/mkvmerge/etc) at a lower process priority")
 	rootCmd.Flags().String(ARG_OUTPUT, "robin-output", "Specifies a folder to copy final output to")
 	rootCmd.Flags().Bool(ARG_PLEX, false, "Enables renaming of output to plex recommendations")
 	rootCmd.Flags().Int(ARG_PLEX_EPISODE, 1, "Starting episode number for plex tv shows")

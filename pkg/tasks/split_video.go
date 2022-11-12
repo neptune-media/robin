@@ -5,6 +5,7 @@ import (
 	"fmt"
 	mediakit "github.com/neptune-media/MediaKit-go"
 	mediatasks "github.com/neptune-media/MediaKit-go/tasks"
+	"github.com/neptune-media/MediaKit-go/tools/ffprobe"
 	"github.com/neptune-media/MediaKit-go/tools/mkvmerge"
 	"github.com/neptune-media/MediaKit-go/tools/mkvpropedit"
 	"go.uber.org/zap"
@@ -14,9 +15,10 @@ import (
 )
 
 type SplitVideo struct {
-	Logger  *zap.SugaredLogger
-	Options SplitVideoOptions
-	WorkDir string
+	Logger           *zap.SugaredLogger
+	Options          SplitVideoOptions
+	UseLowerPriority bool
+	WorkDir          string
 }
 
 type SplitVideoOptions struct {
@@ -49,7 +51,8 @@ func (t *SplitVideo) Do(ctx context.Context, inputFilename string) ([]string, er
 	// Read video I-frames
 	logger.Infow("using input file", "filename", inputFilename)
 	logger.Infow("reading i-frames")
-	frames, err := mediatasks.ReadVideoIFrames(inputFilename)
+	probe := &ffprobe.FFProbe{Filename: inputFilename, GetFrames: true, LowPriority: t.UseLowerPriority}
+	frames, err := mediatasks.ReadVideoIFrames(probe)
 	if err != nil {
 		return nil, err
 	}
@@ -69,10 +72,11 @@ func (t *SplitVideo) Do(ctx context.Context, inputFilename string) ([]string, er
 		outputFilename,
 		episodes,
 	)
+	runner.LowPriority = t.UseLowerPriority
 
 	err = runner.Do()
 	if err != nil {
-		return nil, fmt.Errorf("error while splitting file: %v\noutput from command:\n%s", err, runner.GetOutput())
+		return nil, fmt.Errorf("error while splitting file: %v\noutput from command:\n%s\n%s", err, runner.GetStdout(), runner.GetStderr())
 	}
 
 	logger.Infow("fixing episode chapter names")

@@ -3,11 +3,13 @@ package tasks
 import (
 	"context"
 	"fmt"
-	"github.com/neptune-media/robin/pkg/ffmpeg"
+	"github.com/neptune-media/MediaKit-go/tools/ffmpeg"
+	"github.com/neptune-media/robin/pkg/codec"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type TranscodeVideo struct {
@@ -33,7 +35,7 @@ type TranscodeVideoOptions struct {
 
 func newEncodingOptionsFromTask(opts map[string]interface{}) (ffmpeg.EncodingOptions, error) {
 	buf, _ := yaml.Marshal(opts)
-	return ffmpeg.NewEncodingOptionsFromBytes(buf)
+	return codec.NewEncodingOptionsFromBytes(buf)
 }
 
 func (t *TranscodeVideo) Do(ctx context.Context, inputFilename string) (string, error) {
@@ -47,14 +49,16 @@ func (t *TranscodeVideo) Do(ctx context.Context, inputFilename string) (string, 
 	videoOpts, _ := newEncodingOptionsFromTask(opts.VideoEncodingOptions)
 
 	listener := new(ffmpeg.ProgressListener)
+	listener.ReportInterval = time.Second
+
 	addr, err := listener.Begin()
 	if err != nil {
-		logger.Errorw("error while starting ffmpeg progress listener", "err", err)
+		logger.Errorw("error while starting codec progress listener", "err", err)
 		return "", err
 	}
 	defer listener.Close()
 
-	runner := &ffmpeg.Runner{
+	runner := &ffmpeg.FFmpeg{
 		AudioLanguages:    opts.AudioLanguages,
 		AudioOptions:      audioOpts,
 		EnableFastStart:   opts.EnableFastStart,
@@ -69,11 +73,13 @@ func (t *TranscodeVideo) Do(ctx context.Context, inputFilename string) (string, 
 	}
 
 	go listener.Run(logger)
-	logger.Infow("running ffmpeg", "command", runner.GetCommandString())
+	logger.Infow("running codec",
+		"command", runner.GetCommand(),
+		"args", strings.Join(runner.GetCommandArgs(), " "))
 
 	err = runner.Do()
 	if err != nil {
-		fmt.Printf("output? %s\n", runner.GetOutput())
+		fmt.Printf("output? %s\n%s\n", runner.GetStdout(), runner.GetStderr())
 	}
 
 	return outputFilename, err
