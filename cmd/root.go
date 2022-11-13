@@ -90,6 +90,12 @@ media library a bit easier.`,
 			}
 		}
 
+		// Setup the analyze task
+		pipe.Analyze = &tasks.AnalyzeVideo{
+			Logger:           logger,
+			UseLowerPriority: viper.GetBool(ARG_LOW_PRIORITY),
+		}
+
 		// Setup the transcoding task
 		pipe.Transcode = &tasks.TranscodeVideo{
 			Logger:           logger,

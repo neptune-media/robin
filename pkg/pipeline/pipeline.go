@@ -10,6 +10,7 @@ import (
 )
 
 type Pipeline struct {
+	Analyze   *tasks.AnalyzeVideo
 	Logger    *zap.SugaredLogger
 	Plex      PlexOptions
 	OutputDir string
@@ -41,8 +42,17 @@ func (p *Pipeline) Do(ctx context.Context, input string) ([]string, error) {
 
 	outputs := make([]string, 0)
 	for _, file := range files {
+		totalFrameCount := 0
+		if p.Analyze != nil {
+			count, err := p.Analyze.Do(context.TODO(), file)
+			if err != nil {
+				return nil, err
+			}
+			totalFrameCount = count
+		}
+
 		// Transcode each file from the split
-		transcoded, err := p.Transcode.Do(context.TODO(), file)
+		transcoded, err := p.Transcode.Do(context.TODO(), file, totalFrameCount)
 		if err != nil {
 			p.Logger.Errorw("error while transcoding video", "err", err)
 			return nil, err

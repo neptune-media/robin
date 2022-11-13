@@ -38,7 +38,7 @@ func newEncodingOptionsFromTask(opts map[string]interface{}) (ffmpeg.EncodingOpt
 	return codec.NewEncodingOptionsFromBytes(buf)
 }
 
-func (t *TranscodeVideo) Do(ctx context.Context, inputFilename string) (string, error) {
+func (t *TranscodeVideo) Do(ctx context.Context, inputFilename string, totalFrameCount int) (string, error) {
 	logger := t.Logger
 	basename := strings.TrimSuffix(filepath.Base(inputFilename), filepath.Ext(inputFilename))
 	outputFilename := filepath.Join(t.WorkDir, fmt.Sprintf("%s-output.mkv", basename))
@@ -50,6 +50,7 @@ func (t *TranscodeVideo) Do(ctx context.Context, inputFilename string) (string, 
 
 	listener := new(ffmpeg.ProgressListener)
 	listener.ReportInterval = time.Second
+	listener.TotalFrameCount = totalFrameCount
 
 	addr, err := listener.Begin()
 	if err != nil {
