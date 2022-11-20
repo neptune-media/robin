@@ -26,6 +26,7 @@ const (
 	ARG_PLEX_NAME       = "plex-name"
 	ARG_PLEX_SEASON     = "plex-season"
 	ARG_PLEX_YEAR       = "plex-year"
+	ARG_SKIP_ANALYZE    = "skip-analyze"
 	ARG_SPLIT           = "split"
 	ARG_TEMPLATE        = "template"
 	ARG_WORKDIR         = "work-dir"
@@ -90,10 +91,12 @@ media library a bit easier.`,
 			}
 		}
 
-		// Setup the analyze task
-		pipe.Analyze = &tasks.AnalyzeVideo{
-			Logger:           logger,
-			UseLowerPriority: viper.GetBool(ARG_LOW_PRIORITY),
+		if !viper.GetBool(ARG_SKIP_ANALYZE) {
+			// Setup the analyze task
+			pipe.Analyze = &tasks.AnalyzeVideo{
+				Logger:           logger,
+				UseLowerPriority: viper.GetBool(ARG_LOW_PRIORITY),
+			}
 		}
 
 		// Setup the transcoding task
@@ -137,6 +140,7 @@ func init() {
 	rootCmd.Flags().String(ARG_PLEX_NAME, "", "Movie or TV Show name")
 	rootCmd.Flags().Int(ARG_PLEX_SEASON, 1, "Season number for plex tv shows")
 	rootCmd.Flags().Int(ARG_PLEX_YEAR, 0, "Year of the plex media item")
+	rootCmd.Flags().Bool(ARG_SKIP_ANALYZE, false, "Skips analyzing the video before transcoding")
 	rootCmd.Flags().Bool(ARG_SPLIT, false, "Enables multi-episode file splitting before transcoding")
 	rootCmd.Flags().StringArray(ARG_TEMPLATE, nil, "Specifies a path to a template file")
 	rootCmd.Flags().String(ARG_WORKDIR, "", "Specifies a directory to use for scratch space")
