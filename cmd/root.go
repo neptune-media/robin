@@ -96,6 +96,7 @@ media library a bit easier.`,
 			pipe.Analyze = &tasks.AnalyzeVideo{
 				Logger:           logger,
 				UseLowerPriority: viper.GetBool(ARG_LOW_PRIORITY),
+				UseThreads:       true,
 			}
 		}
 

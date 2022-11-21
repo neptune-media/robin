@@ -10,7 +10,9 @@ import (
 
 type AnalyzeVideo struct {
 	Logger           *zap.SugaredLogger
+	Threads          int
 	UseLowerPriority bool
+	UseThreads       bool
 }
 
 func (t *AnalyzeVideo) Do(ctx context.Context, inputFilename string) (int, error) {
@@ -19,7 +21,13 @@ func (t *AnalyzeVideo) Do(ctx context.Context, inputFilename string) (int, error
 	// Analyze video streams
 	logger.Infow("using input file", "filename", inputFilename)
 	logger.Infow("reading video data")
-	probe := &ffprobe.FFProbe{Filename: inputFilename, GetFrameCount: true, LowPriority: t.UseLowerPriority}
+	probe := &ffprobe.FFProbe{
+		Filename:      inputFilename,
+		GetFrameCount: true,
+		LowPriority:   t.UseLowerPriority,
+		Threads:       t.Threads,
+		UseThreads:    t.UseThreads,
+	}
 
 	if err := probe.DoWithContext(ctx); err != nil {
 		return 0, fmt.Errorf("error while analyzing video: %s", err)
