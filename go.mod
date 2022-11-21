@@ -3,7 +3,7 @@ module github.com/neptune-media/robin
 go 1.18
 
 require (
-	github.com/neptune-media/MediaKit-go v0.5.0
+	github.com/neptune-media/MediaKit-go v0.6.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.14.0
