@@ -42,17 +42,16 @@ func (p *Pipeline) Do(ctx context.Context, input string) ([]string, error) {
 
 	outputs := make([]string, 0)
 	for _, file := range files {
-		totalFrameCount := 0
+		var results *tasks.AnalyzeResults
 		if p.Analyze != nil {
-			count, err := p.Analyze.Do(context.TODO(), file)
+			results, err = p.Analyze.Do(context.TODO(), file)
 			if err != nil {
 				return nil, err
 			}
-			totalFrameCount = count
 		}
 
 		// Transcode each file from the split
-		transcoded, err := p.Transcode.Do(context.TODO(), file, totalFrameCount)
+		transcoded, err := p.Transcode.Do(context.TODO(), file, results)
 		if err != nil {
 			p.Logger.Errorw("error while transcoding video", "err", err)
 			return nil, err
