@@ -45,8 +45,12 @@ type TranscodeVideoOptions struct {
 }
 
 func newEncodingOptionsFromTask(opts map[string]interface{}) (ffmpeg.EncodingOptions, error) {
+	return newEncodingOptionsFromTaskWithFallback(opts, nil)
+}
+
+func newEncodingOptionsFromTaskWithFallback(opts map[string]interface{}, fallback ffmpeg.EncodingOptions) (ffmpeg.EncodingOptions, error) {
 	buf, _ := yaml.Marshal(opts)
-	return codec.NewEncodingOptionsFromBytes(buf)
+	return codec.NewEncodingOptionsFromBytesWithFallback(buf, fallback)
 }
 
 func (t *TranscodeVideo) Do(ctx context.Context, inputFilename string, analyzeResults *AnalyzeResults) (string, error) {
@@ -55,7 +59,7 @@ func (t *TranscodeVideo) Do(ctx context.Context, inputFilename string, analyzeRe
 	outputFilename := filepath.Join(t.WorkDir, fmt.Sprintf("%s-output.mkv", basename))
 
 	opts := t.Options
-	audioOpts, _ := newEncodingOptionsFromTask(opts.AudioEncodingOptions)
+	audioOpts, _ := newEncodingOptionsFromTaskWithFallback(opts.AudioEncodingOptions, &ffmpeg.GenericAudioOptions{})
 	containerOpts, _ := newEncodingOptionsFromTask(opts.ContainerOptions)
 	subtitleOpts, _ := newEncodingOptionsFromTask(opts.SubtitleEncodingOptions)
 	videoOpts, _ := newEncodingOptionsFromTask(opts.VideoEncodingOptions)
