@@ -25,6 +25,8 @@ github.com/neptune-media/MediaKit-go v0.6.0 h1:IHrv+TXH7Z1mM9KjpqiN1Zqmw97zGawLK
 github.com/neptune-media/MediaKit-go v0.6.0/go.mod h1:rZx5vAn+vtWDq5X54NbN4TdMyTljQV76xVKnZHKVtbc=
 github.com/neptune-media/MediaKit-go v0.7.0 h1:TKoQlOzNGpTawEftP5ux71yFo9C9yszSrjmBuBTQtyQ=
 github.com/neptune-media/MediaKit-go v0.7.0/go.mod h1:xKkYNo5qs+s2lU22pZbzznD8vBgYJMyxiQhDm4mvDVM=
+github.com/neptune-media/MediaKit-go v0.7.1 h1:rjmrSkJPvVoNhkdIJVUIF94nvEUE6qYz44kXrvRa5Kk=
+github.com/neptune-media/MediaKit-go v0.7.1/go.mod h1:xKkYNo5qs+s2lU22pZbzznD8vBgYJMyxiQhDm4mvDVM=
 github.com/pelletier/go-toml/v2 v2.1.1 h1:LWAJwfNvjQZCFIDKWYQaM62NcYeYViCmWIwmOStowAI=
 github.com/pelletier/go-toml/v2 v2.1.1/go.mod h1:tJU2Z3ZkXwnxa4DPO899bsyIoywizdUvyaeZurnPPDc=
 github.com/pixelbender/go-matroska v0.0.0-20181029113629-4ea028a99fa6 h1:lJTZOnPw1ilSofwuzuv8nTx1nKwxsEJhgTxZzWmYBKc=

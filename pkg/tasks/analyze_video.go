@@ -18,8 +18,11 @@ type AnalyzeVideo struct {
 }
 
 type AnalyzeResults struct {
-	Duration    time.Duration // Length of the video
-	TotalFrames int           // Total number of frames in the video
+	Duration           time.Duration // Length of the video
+	NumAudioStreams    int           // Number of audio streams in source file
+	NumSubtitleStreams int           // Number of subtitle streams in source file
+	NumVideoStreams    int           // Number of video streams in source file
+	TotalFrames        int           // Total number of frames in the video
 }
 
 func (t *AnalyzeVideo) Do(ctx context.Context, inputFilename string) (*AnalyzeResults, error) {
@@ -44,10 +47,39 @@ func (t *AnalyzeVideo) Do(ctx context.Context, inputFilename string) (*AnalyzeRe
 	if err != nil {
 		return nil, err
 	}
-	totalFrames, _ := strconv.Atoi(output.Streams[0].NbReadFrames)
+
+	// Select first video stream we find
+	videoStream := ffprobe.Stream{}
+	for _, stream := range output.Streams {
+		if stream.CodecType == "video" {
+			videoStream = stream
+			break
+		}
+	}
+
+	totalFrames, _ := strconv.Atoi(videoStream.NbReadFrames)
 	results := &AnalyzeResults{TotalFrames: totalFrames}
-	err = results.SetDurationFromFramerateString(output.Streams[0].AvgFrameRate)
-	logger.Infow("analysis results", "total frames", results.TotalFrames, "duration", results.Duration, "duration-friendly", results.Duration.String())
+	err = results.SetDurationFromFramerateString(videoStream.AvgFrameRate)
+
+	for _, stream := range output.Streams {
+		switch stream.CodecType {
+		case "audio":
+			results.NumAudioStreams++
+		case "subtitle":
+			results.NumSubtitleStreams++
+		case "video":
+			results.NumVideoStreams++
+		}
+	}
+
+	logger.Infow("analysis results",
+		"total frames", results.TotalFrames,
+		"duration", results.Duration,
+		"duration-friendly", results.Duration.String(),
+		"num-audio-streams", results.NumAudioStreams,
+		"num-subtitle-streams", results.NumSubtitleStreams,
+		"num-video-streams", results.NumVideoStreams,
+	)
 	return results, err
 }
 

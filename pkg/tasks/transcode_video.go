@@ -36,12 +36,18 @@ type TranscodeVideoOptions struct {
 	DiscardAudio            bool                   `yaml:"discard_audio,omitempty"`
 	DiscardSubtitles        bool                   `yaml:"discard_subtitles,omitempty"`
 	DiscardVideo            bool                   `yaml:"discard_video,omitempty"`
-	EnableFastStart         bool                   `yaml:"enable_fast_start,omitempty"`
 	InputArgs               []string               `yaml:"input_args,omitempty"`
+	MuxOptions              TranscodeMuxOptions    `yaml:"mux_options"`
 	OutputArgs              []string               `yaml:"output_args,omitempty"`
 	SubtitleLanguages       []string               `yaml:"subtitle_languages,omitempty"`
 	SubtitleEncodingOptions map[string]interface{} `yaml:"subtitle_options,omitempty"`
 	VideoEncodingOptions    map[string]interface{} `yaml:"video_options,omitempty"`
+}
+
+type TranscodeMuxOptions struct {
+	EnableFastStart              bool `yaml:"enable_fast_start,omitempty"`      // Enables optimizing the output container for streaming
+	ExpandedIndexSpace           bool `yaml:"expanded_index_space"`             // Allocates extra index space based on number of subtitle streams
+	ExtraSubtitleIndexSizeAmount int  `yaml:"extra_subtitle_index_size_amount"` // Amount of extra space in KB per hour per subtitle stream to allocate in the index
 }
 
 func newEncodingOptionsFromTask(opts map[string]interface{}) (ffmpeg.EncodingOptions, error) {
@@ -118,17 +124,29 @@ func (t *TranscodeVideo) configureContainerOptsFromFlags(opts ffmpeg.EncodingOpt
 	switch opts.(type) {
 	case *ffmpeg.MkvContainerOptions:
 		cOpts := opts.(*ffmpeg.MkvContainerOptions)
-		if t.Options.EnableFastStart {
+		if t.Options.MuxOptions.EnableFastStart {
 			// The MKV FastStart equivalent requires pre-allocating index space at the beginning of the file, which
 			// requires knowing approximately the duration of the video.
 			if analyzeResults != nil && analyzeResults.Duration > 0 {
-				cOpts.ReserveIndexSpace = matroskaReserveIndexSpacePerHour * (int(analyzeResults.Duration.Truncate(time.Hour).Hours()) + 1)
+				runtimeHours := int(analyzeResults.Duration.Truncate(time.Hour).Hours()) + 1
+				cOpts.ReserveIndexSpace = matroskaReserveIndexSpacePerHour * runtimeHours
+
+				// Sometimes, if a file has a significant number of subtitle streams, the required amount of index space
+				// can increase significantly.  Adding 50k/hour/subtitle stream seems to be a generally okay amount.
+				if t.Options.MuxOptions.ExpandedIndexSpace {
+					subtitleSizeFactor := t.Options.MuxOptions.ExtraSubtitleIndexSizeAmount
+					if subtitleSizeFactor == 0 {
+						subtitleSizeFactor = matroskaReserveIndexSpacePerHour
+					}
+
+					cOpts.ReserveIndexSpace += subtitleSizeFactor * runtimeHours * analyzeResults.NumSubtitleStreams
+				}
 			}
 		}
 
 	case *ffmpeg.Mp4ContainerOptions:
 		cOpts := opts.(*ffmpeg.Mp4ContainerOptions)
-		if t.Options.EnableFastStart {
+		if t.Options.MuxOptions.EnableFastStart {
 			cOpts.EnableFastStart = true
 		}
 	}
